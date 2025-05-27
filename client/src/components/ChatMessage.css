@@ -1,0 +1,31 @@
+.chat-message {
+  display: flex;
+  align-items: flex-start;
+  margin-bottom: 12px;
+}
+
+.chat-message.user {
+  flex-direction: row-reverse;
+}
+
+.chat-message img {
+  width: 32px;
+  height: 32px;
+  margin: 0 10px;
+  border-radius: 50%;
+  background-color: #ddd;
+}
+
+.chat-bubble {
+  max-width: 70%;
+  padding: 12px 16px;
+  border-radius: 20px;
+  background-color: #e0f2fe;
+  font-size: 14px;
+  line-height: 1.4;
+}
+
+.chat-message.user .chat-bubble {
+  background-color: #d1fae5;
+  text-align: right;
+}
