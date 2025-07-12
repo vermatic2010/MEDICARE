@@ -60,7 +60,6 @@ const password_hash = await bcrypt.hash(password, 10); in authRoutes.js
 - Type naturally: "yoga for stress" → Should get yoga advice (pattern matching) 
 
 *** DDL ***
-//
 1. 
 CREATE TABLE `appointments` (
   `id` int NOT NULL AUTO_INCREMENT,
@@ -76,6 +75,7 @@ CREATE TABLE `appointments` (
   CONSTRAINT `appointments_ibfk_1` FOREIGN KEY (`patient_id`) REFERENCES `patients` (`id`),
   CONSTRAINT `appointments_ibfk_2` FOREIGN KEY (`doctor_id`) REFERENCES `doctors` (`id`)
 )
+
 2.
 CREATE TABLE `patients` ( 
   `id` int NOT NULL AUTO_INCREMENT,
@@ -89,6 +89,7 @@ CREATE TABLE `patients` (
   PRIMARY KEY (`id`),
   UNIQUE KEY `username_UNIQUE` (`username`)
 )
+
 3.
 CREATE TABLE `doctors` (
  `id` int NOT NULL AUTO_INCREMENT,
@@ -104,6 +105,7 @@ CREATE TABLE `doctors` (
   PRIMARY KEY (`id`),
   UNIQUE KEY `username_UNIQUE` (`username`)
 )
+
 4.
 CREATE TABLE `prescriptions` (
   `id` int NOT NULL AUTO_INCREMENT,
@@ -125,6 +127,7 @@ CREATE TABLE `prescriptions` (
   CONSTRAINT `prescriptions_ibfk_1` FOREIGN KEY (`patient_id`) REFERENCES `patients` (`id`) ON DELETE CASCADE,
   CONSTRAINT `prescriptions_ibfk_2` FOREIGN KEY (`doctor_id`) REFERENCES `doctors` (`id`) ON DELETE SET NULL
 )
+
 5.
 CREATE TABLE `doctor_availability` (
   `id` int NOT NULL AUTO_INCREMENT,
