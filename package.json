@@ -1,0 +1,11 @@
+{
+  "name": "healthconnect",
+  "version": "1.0.0",
+  "description": "HealthConnect - Comprehensive medical platform connecting patients with doctors through AI-powered triage, video calls, and prescription management",
+  "main": "index.js",
+  "scripts": {
+  },
+  "keywords": ["healthcare", "medical", "telemedicine", "AI", "prescription", "appointment"],
+  "author": "",
+  "license": "ISC"
+}

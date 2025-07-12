@@ -1,6 +1,7 @@
 import React, { useState } from "react";
-import WellnessChat from "./WellnessChat"; // Adjust path if needed
+import axios from "axios";
 
+// --- Styles ---
 const bgStyle = {
   minHeight: "100vh",
   background: "linear-gradient(135deg, #e0e7ff 0%, #f0fdfa 100%)",
@@ -9,7 +10,6 @@ const bgStyle = {
   justifyContent: "center",
   fontFamily: "'Segoe UI', 'Roboto', 'Arial', sans-serif",
 };
-
 const cardStyle = {
   background: "white",
   borderRadius: 18,
@@ -19,7 +19,6 @@ const cardStyle = {
   width: "100%",
   border: "1px solid #e0e7ff",
 };
-
 const headingStyle = {
   textAlign: "center",
   fontWeight: 700,
@@ -28,21 +27,18 @@ const headingStyle = {
   marginBottom: 8,
   letterSpacing: 1,
 };
-
 const subheadingStyle = {
   textAlign: "center",
   color: "#64748b",
   fontSize: 16,
   marginBottom: 24,
 };
-
 const labelStyle = {
   fontWeight: 500,
   color: "#334155",
   marginBottom: 4,
   display: "block",
 };
-
 const inputStyle = {
   width: "100%",
   padding: "10px 12px",
@@ -54,12 +50,10 @@ const inputStyle = {
   outline: "none",
   transition: "border 0.2s",
 };
-
 const selectStyle = {
   ...inputStyle,
   padding: "10px 8px",
 };
-
 const buttonStyle = {
   width: "100%",
   padding: "12px",
@@ -74,20 +68,6 @@ const buttonStyle = {
   boxShadow: "0 2px 8px 0 rgba(37,99,235,0.08)",
   letterSpacing: 1,
 };
-
-const roleButtonStyle = (active) => ({
-  ...buttonStyle,
-  width: "48%",
-  marginBottom: 0,
-  background: active
-    ? "linear-gradient(90deg, #2563eb 60%, #38bdf8 100%)"
-    : "#e0e7ff",
-  color: active ? "white" : "#2563eb",
-  fontWeight: active ? 700 : 500,
-  border: active ? "none" : "1px solid #cbd5e1",
-  marginRight: "4%",
-});
-
 const linkButtonStyle = {
   border: "none",
   background: "none",
@@ -97,6 +77,57 @@ const linkButtonStyle = {
   textDecoration: "underline",
   fontSize: 15,
 };
+const toggleContainerStyle = {
+  display: "flex",
+  alignItems: "center",
+  justifyContent: "center",
+  marginBottom: 18,
+  userSelect: "none",
+};
+const sliderStyle = {
+  background: "#e0e7ff",
+  borderRadius: 20,
+  display: "flex",
+  alignItems: "center",
+  width: 220,
+  height: 40,
+  position: "relative",
+  cursor: "pointer",
+  boxShadow: "0 2px 8px 0 rgba(37,99,235,0.08)",
+};
+const sliderButtonStyle = (active) => ({
+  flex: 1,
+  zIndex: 2,
+  textAlign: "center",
+  fontWeight: 600,
+  fontSize: 16,
+  color: active ? "white" : "#2563eb",
+  transition: "color 0.2s",
+  cursor: "pointer",
+  padding: "8px 0",
+});
+const sliderThumbStyle = (role) => ({
+  position: "absolute",
+  top: 3,
+  left: role === "patient" ? 3 : 110,
+  width: 107,
+  height: 34,
+  background: "linear-gradient(90deg, #2563eb 60%, #38bdf8 100%)",
+  borderRadius: 17,
+  transition: "left 0.25s",
+  zIndex: 1,
+});
+
+// --- Main Component ---
+const daysOfWeek = [
+  "Monday",
+  "Tuesday",
+  "Wednesday",
+  "Thursday",
+  "Friday",
+  "Saturday",
+  "Sunday",
+];
 
 const SignUpLogin = ({ onLogin }) => {
   const [mode, setMode] = useState("login"); // or "signup"
@@ -109,22 +140,60 @@ const SignUpLogin = ({ onLogin }) => {
     fullName: "",
     dob: "",
     gender: "",
-    // Doctor-specific
     specialization: "",
     license: "",
     experience: "",
     hospital: "",
   });
+  const [availability, setAvailability] = useState(
+    daysOfWeek.map((day) => ({
+      day,
+      enabled: false,
+      start: "",
+      end: "",
+    }))
+  );
   const [message, setMessage] = useState("");
+  const [messageType, setMessageType] = useState("error"); // "success" or "error"
   const [loggedIn, setLoggedIn] = useState(false);
 
-  const handleChange = (e) => {
-    setForm({ ...form, [e.target.name]: e.target.value });
+  // Helper function to set messages with appropriate type
+  const showMessage = (text, type = "error") => {
+    setMessage(text);
+    setMessageType(type);
   };
+
+  const clearMessage = () => {
+    setMessage("");
+    setMessageType("error");
+  };
+
+  // --- Validation ---
+  const validateSignup = (role, form) => {
+    if (!form.username || form.username.length < 3) return "Username must be at least 3 characters.";
+    if (!form.email || !/^[\w-.]+@([\w-]+\.)+[\w-]{2,}$/.test(form.email)) return "Please enter a valid email address.";
+    if (!form.phone || !/^\d{10,15}$/.test(form.phone.replace(/\D/g, ""))) return "Please enter a valid phone number.";
+    if (!form.password || form.password.length < 6) return "Password must be at least 6 characters.";
+    if (!form.fullName || form.fullName.length < 2) return "Please enter your full name.";
+    if (role === "patient") {
+      if (!form.dob) return "Please enter your date of birth.";
+      if (!form.gender) return "Please select your gender.";
+    } else if (role === "doctor") {
+      if (!form.specialization) return "Please enter your specialization.";
+      if (!form.license) return "Please enter your medical license number.";
+      if (!form.experience || isNaN(form.experience) || form.experience < 0) return "Please enter valid years of experience.";
+      if (!form.hospital) return "Please enter your hospital/clinic name.";
+      if (!availability.some((a) => a.enabled && a.start && a.end)) return "Please set at least one available day and time.";
+    }
+    return "";
+  };
+
+  // --- Handlers ---
+  const handleChange = (e) => setForm({ ...form, [e.target.name]: e.target.value });
 
   const handleRoleClick = (selectedRole) => {
     setRole(selectedRole);
-    setMessage("");
+    clearMessage();
     setForm({
       username: "",
       email: "",
@@ -138,103 +207,101 @@ const SignUpLogin = ({ onLogin }) => {
       experience: "",
       hospital: "",
     });
+    setAvailability(
+      daysOfWeek.map((day) => ({
+        day,
+        enabled: false,
+        start: "",
+        end: "",
+      }))
+    );
   };
 
-  const handleSubmit = (e) => {
+  const handleAvailabilityChange = (idx, field, value) => {
+    setAvailability((prev) =>
+      prev.map((a, i) =>
+        i === idx ? { ...a, [field]: field === "enabled" ? value : value } : a
+      )
+    );
+  };
+
+  const handleSubmit = async (e) => {
     e.preventDefault();
     if (mode === "signup") {
-      if (role === "patient") {
-        if (
-          !form.username ||
-          !form.email ||
-          !form.phone ||
-          !form.password ||
-          !form.fullName ||
-          !form.dob ||
-          !form.gender
-        ) {
-          setMessage("Please fill all fields.");
-          return;
-        }
-      } else {
-        if (
-          !form.username ||
-          !form.email ||
-          !form.phone ||
-          !form.password ||
-          !form.fullName ||
-          !form.specialization ||
-          !form.license ||
-          !form.experience ||
-          !form.hospital
-        ) {
-          setMessage("Please fill all fields.");
-          return;
-        }
-      }
-      setMessage("");
-      setLoggedIn(true);
-      if (onLogin) onLogin();
-    } else {
-      if (!form.username || !form.password) {
-        setMessage("Please enter username and password.");
+      const validationMsg = validateSignup(role, form);
+      if (validationMsg) {
+        showMessage(validationMsg);
         return;
       }
-      setMessage("");
-      setLoggedIn(true);
-      if (onLogin) onLogin();
+      try {
+        await axios.post("http://localhost:3001/api/auth/signup", {
+          role,
+          ...form,
+          availability: role === "doctor"
+            ? availability.filter((a) => a.enabled && a.start && a.end)
+            : undefined,
+        });
+        showMessage("Signup successful! Please login.", "success");
+        setMode("login");
+      } catch (err) {
+        showMessage(err.response?.data?.error || "Signup failed. Please try again.");
+      }
+    } else {
+      if (!form.username || !form.password) {
+        showMessage("Please enter username and password.");
+        return;
+      }
+      try {
+        const response = await axios.post("http://localhost:3001/api/auth/login", {
+          role,
+          username: form.username,
+          password: form.password,
+        });
+        const userData = response.data.user; // Capture user data including ID
+        clearMessage();
+        setLoggedIn(true);
+        if (onLogin) onLogin(role, userData); // Pass both role and user data
+      } catch (err) {
+        showMessage(err.response?.data?.error || "Login failed. Please try again.");
+      }
     }
   };
 
+  // --- Render ---
   if (loggedIn) {
-    return <WellnessChat username={form.username} />;
+    // Don't render WellnessChat directly - let App.js handle the navigation
+    return <div>Login successful! Please wait...</div>;
   }
 
   return (
     <div style={bgStyle}>
       <form style={cardStyle} onSubmit={handleSubmit}>
-        <div style={headingStyle}>Welcome to Medicare {mode === "login" ? "Login" : "Sign Up"}</div>
+        <div style={headingStyle}>
+          Welcome to HealthConnect {mode === "login" ? "Login" : "Sign Up"}
+        </div>
         <div style={subheadingStyle}>
           {mode === "login"
             ? "Login to access your smart healthcare services."
             : "Create your account to access our smart healthcare services."}
         </div>
-        {mode === "login" && (
-          <div style={{ display: "flex", gap: 10, marginBottom: 18 }}>
-            <button
-              type="button"
-              style={roleButtonStyle(role === "patient")}
+        {/* Role Toggle */}
+        <div style={toggleContainerStyle}>
+          <div style={sliderStyle}>
+            <div style={sliderThumbStyle(role)} />
+            <div
+              style={sliderButtonStyle(role === "patient")}
               onClick={() => handleRoleClick("patient")}
             >
-              Login as Patient
-            </button>
-            <button
-              type="button"
-              style={roleButtonStyle(role === "doctor")}
+              Patient
+            </div>
+            <div
+              style={sliderButtonStyle(role === "doctor")}
               onClick={() => handleRoleClick("doctor")}
             >
-              Login as Doctor
-            </button>
+              Doctor
+            </div>
           </div>
-        )}
-        {mode === "signup" && (
-          <div style={{ display: "flex", gap: 10, marginBottom: 18 }}>
-            <button
-              type="button"
-              style={roleButtonStyle(role === "patient")}
-              onClick={() => handleRoleClick("patient")}
-            >
-              Sign Up as Patient
-            </button>
-            <button
-              type="button"
-              style={roleButtonStyle(role === "doctor")}
-              onClick={() => handleRoleClick("doctor")}
-            >
-              Sign Up as Doctor
-            </button>
-          </div>
-        )}
+        </div>
         {mode === "signup" && (
           <>
             <div>
@@ -323,6 +390,37 @@ const SignUpLogin = ({ onLogin }) => {
                     placeholder="e.g. City Hospital"
                   />
                 </div>
+                <div>
+                  <label style={labelStyle}>Weekly Availability</label>
+                  <div style={{ marginBottom: 12 }}>
+                    {availability.map((a, idx) => (
+                      <div key={a.day} style={{ display: "flex", alignItems: "center", marginBottom: 6 }}>
+                        <input
+                          type="checkbox"
+                          checked={a.enabled}
+                          onChange={e => handleAvailabilityChange(idx, "enabled", e.target.checked)}
+                          style={{ marginRight: 8 }}
+                        />
+                        <span style={{ width: 80 }}>{a.day}</span>
+                        <input
+                          type="time"
+                          value={a.start}
+                          disabled={!a.enabled}
+                          onChange={e => handleAvailabilityChange(idx, "start", e.target.value)}
+                          style={{ ...inputStyle, width: 110, marginBottom: 0, marginRight: 6 }}
+                        />
+                        <span style={{ margin: "0 6px" }}>to</span>
+                        <input
+                          type="time"
+                          value={a.end}
+                          disabled={!a.enabled}
+                          onChange={e => handleAvailabilityChange(idx, "end", e.target.value)}
+                          style={{ ...inputStyle, width: 110, marginBottom: 0 }}
+                        />
+                      </div>
+                    ))}
+                  </div>
+                </div>
               </>
             )}
             <div>
@@ -357,7 +455,7 @@ const SignUpLogin = ({ onLogin }) => {
             onChange={handleChange}
             type="text"
             style={inputStyle}
-            placeholder="Choose a username"
+            placeholder="Enter your username"
           />
         </div>
         <div>
@@ -368,7 +466,7 @@ const SignUpLogin = ({ onLogin }) => {
             onChange={handleChange}
             type="password"
             style={inputStyle}
-            placeholder="Create a password"
+            placeholder="Enter your password"
           />
         </div>
         <button type="submit" style={buttonStyle}>
@@ -377,8 +475,8 @@ const SignUpLogin = ({ onLogin }) => {
               ? "Login as Doctor"
               : "Login as Patient"
             : role === "doctor"
-            ? "Sign Up as Doctor"
-            : "Sign Up as Patient"}
+              ? "Sign Up as Doctor"
+              : "Sign Up as Patient"}
         </button>
         <div style={{ textAlign: "center", marginBottom: 8 }}>
           {mode === "login" ? (
@@ -387,9 +485,10 @@ const SignUpLogin = ({ onLogin }) => {
               <button
                 onClick={() => {
                   setMode("signup");
-                  setMessage("");
+                  clearMessage();
                 }}
                 style={linkButtonStyle}
+                type="button"
               >
                 Sign Up
               </button>
@@ -400,9 +499,10 @@ const SignUpLogin = ({ onLogin }) => {
               <button
                 onClick={() => {
                   setMode("login");
-                  setMessage("");
+                  clearMessage();
                 }}
                 style={linkButtonStyle}
+                type="button"
               >
                 Login
               </button>
@@ -410,8 +510,17 @@ const SignUpLogin = ({ onLogin }) => {
           )}
         </div>
         {message && (
-          <div style={{ color: "#dc2626", textAlign: "center", marginTop: 8 }}>
-            {message}
+          <div style={{ 
+            color: messageType === "success" ? "#059669" : "#dc2626", // Green for success, red for error
+            textAlign: "center", 
+            marginTop: 8,
+            fontWeight: messageType === "success" ? "600" : "500",
+            backgroundColor: messageType === "success" ? "#f0fdf4" : "#fef2f2", // Light green/red background
+            padding: "8px 12px",
+            borderRadius: "6px",
+            border: messageType === "success" ? "1px solid #bbf7d0" : "1px solid #fecaca"
+          }}>
+            {messageType === "success" && "✅ "}{message}
           </div>
         )}
       </form>

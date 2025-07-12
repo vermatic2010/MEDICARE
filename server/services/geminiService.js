@@ -21,35 +21,30 @@ class GeminiService {
   async analyzeSymptoms(symptoms) {
     const prompt = `As a medical triage assistant, analyze these symptoms: "${symptoms}".
     
-    Provide in this structured format:
-    1. Likely Conditions (2-3 most probable)
-    2. Recommended Specialist
-    3. Urgency Level (low/medium/high)
-    4. Immediate Actions
-    5. When to Seek Help
+    Provide concise response with minimal spacing:
+    **Likely Conditions**: [2-3 most probable conditions]
+    **Recommended Specialist**: [Specific doctor type needed]
+    **Urgency Level**: [low/medium/high/URGENT]
+    **Immediate Actions**: [What to do now]
+    **When to Seek Help**: [Warning signs]
     
-    Keep responses concise yet informative.`;
+    Keep responses brief yet informative. Always end with: "Would you like to book an appointment with the recommended specialist? (Reply 'yes' to proceed)"`;
     
     return this.generateContent(prompt);
   }
 
   async getHealthInfo(type, query) {
     const prompts = {
-      aqi: `Provide current AQI for ${query}. Include: 
-      - AQI number and level 
-      - Primary pollutants 
-      - Health recommendations`,
+      food: `Give nutrition facts for ${query} with minimal spacing:
+      **Calories**: [Per serving]
+      **Macronutrients**: [Carbs, protein, fats]
+      **Key Nutrients**: [Important vitamins/minerals]
+      **Health Benefits**: [Brief benefits]`,
       
-      food: `Give nutrition facts for ${query}:
-      - Calories
-      - Macronutrients
-      - Key vitamins/minerals
-      - Health benefits`,
-      
-      yoga: `Suggest yoga for ${query}:
-      - 3-5 recommended poses
-      - Brief instructions
-      - Benefits for the condition`
+      yoga: `Suggest yoga for ${query} with minimal spacing:
+      **Recommended Poses**: [3-5 specific poses]
+      **Instructions**: [Brief how-to for each]
+      **Benefits**: [How each helps the condition]`
     };
 
     if (!prompts[type]) throw new Error("Invalid query type");

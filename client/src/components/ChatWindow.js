@@ -5,10 +5,11 @@ import DOMPurify from "dompurify";
 const userIconUrl = "https://cdn-icons-png.flaticon.com/512/1077/1077114.png";
 const doctorRobotIconUrl = "icons/doctor.png";
 
-export default function ChatWindow({ messages = [], buttons = [], onUserInput }) {
+export default function ChatWindow({ messages = [], buttons = [], onUserInput, onFileUpload }) {
   const [inputText, setInputText] = useState("");
   const messagesEndRef = useRef(null);
   const recognitionRef = useRef(null);
+  const fileInputRef = useRef(null);
 
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
@@ -65,6 +66,19 @@ export default function ChatWindow({ messages = [], buttons = [], onUserInput })
     } else {
       alert("Voice input not supported in this browser.");
     }
+  };
+
+  const handleFileUpload = (event) => {
+    const file = event.target.files[0];
+    if (file && typeof onFileUpload === "function") {
+      onFileUpload(file);
+    }
+    // Reset file input
+    event.target.value = '';
+  };
+
+  const triggerFileUpload = () => {
+    fileInputRef.current?.click();
   };
 
   const renderMarkdown = (text) => {
@@ -131,6 +145,30 @@ export default function ChatWindow({ messages = [], buttons = [], onUserInput })
                 }}
               >
                 <div dangerouslySetInnerHTML={renderMarkdown(displayText)} />
+                {msg.showFileUpload && (
+                  <div style={{ marginTop: 15 }}>
+                    <button
+                      onClick={triggerFileUpload}
+                      style={{
+                        backgroundColor: "#17a2b8",
+                        color: "#fff",
+                        border: "none",
+                        borderRadius: 20,
+                        padding: "8px 16px",
+                        cursor: "pointer",
+                        fontSize: 14,
+                        display: "flex",
+                        alignItems: "center",
+                        gap: 8,
+                        transition: "background-color 0.3s ease",
+                      }}
+                      onMouseEnter={(e) => (e.currentTarget.style.backgroundColor = "#138496")}
+                      onMouseLeave={(e) => (e.currentTarget.style.backgroundColor = "#17a2b8")}
+                    >
+                      📎 Upload File
+                    </button>
+                  </div>
+                )}
                 {msg.image && (
                   <img
                     src={msg.image}
@@ -211,6 +249,13 @@ export default function ChatWindow({ messages = [], buttons = [], onUserInput })
             fontSize: 15,
             outline: "none",
           }}
+        />
+        <input
+          type="file"
+          ref={fileInputRef}
+          onChange={handleFileUpload}
+          accept="image/*,.pdf,.txt"
+          style={{ display: "none" }}
         />
         <button
           onClick={handleSend}
